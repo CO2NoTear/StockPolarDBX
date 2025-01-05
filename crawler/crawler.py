@@ -1,28 +1,60 @@
-from typing import Iterator, Self
+from typing import Iterator, Self, Any
+import abc
+from json import dump, loads
+from tqdm import tqdm
+import pytomlpp
 import requests
+from pathlib import Path
 from datetime import datetime
-from random import paretovariate, random
+from random import random
 
 
 class StockData:
     # TODO: A lot to do
-    def __init__(self, rawJsonData: dict | None = None) -> None:
-        print(rawJsonData)
+    def __init__(
+        self, ex: str, date: datetime, rawJsonData: dict | None = None
+    ) -> None:
         self.data = rawJsonData
+        self.date = date
+        self.ex = ex
         pass
 
     def update(self, newData: Self) -> Self:
+        if self.data is None:
+            self.data = newData.data
+            return self
+        if newData.data is None:
+            return self
+        self.data |= newData.data
         return self
 
-    pass
+    def store(self, saveDir: str | Path) -> str | Path:
+        if self.data is None:
+            return ""
+        savePath = Path(
+            f"{saveDir}_{self.ex.upper()}_{self.date.strftime('%Y%m%d')}.json"
+        )
+        savePath.parent.mkdir(parents=True, exist_ok=True)
+        fp = open(savePath, "w", encoding="utf-8")
+        try:
+            dump(self.data, fp, ensure_ascii=False)
+        except Exception as e:
+            raise ValueError(f"Cannot save data to {savePath}") from e
+        finally:
+            fp.close()
+        return savePath
 
 
-class Crawler:
-    EXCHANGE_LIST = ["SZSE", "SSE"]
+class Crawler(metaclass=abc.ABCMeta):
+    @classmethod
+    @abc.abstractmethod
+    def getEX(cls) -> str:
+        pass
 
     @classmethod
-    def codeIterator(cls) -> Iterator:
-        raise NotImplementedError
+    @abc.abstractmethod
+    def codeIterator(cls) -> tqdm:
+        pass
 
     @staticmethod
     def prepareURL(bareURL: str, parameters: dict[str, str]) -> str:
@@ -30,19 +62,21 @@ class Crawler:
         req.prepare_url(bareURL, parameters)
         if req.url is None:
             raise ValueError("Unable to prepare parameter for SZSE url!")
-        print(req.url)
         return req.url
 
-    def crawl(self, date: datetime) -> StockData:
-        data = StockData()
-        codeIter = self.codeIterator()
+    @classmethod
+    def crawl(cls, date: datetime) -> StockData:
+        ex = cls.getEX()
+        data = StockData(ex, date)
+        codeIter = cls.codeIterator()
         for code in codeIter:
-            data.update(self.crawl_implement(code, date))
+            data = data.update(cls.crawl_implement(code, date))
         return data
 
     @classmethod
+    @abc.abstractmethod
     def crawl_implement(cls, code: str, date: datetime) -> StockData:
-        raise NotImplementedError
+        pass
 
 
 class SZSECrawler(Crawler):
@@ -58,9 +92,22 @@ class SZSECrawler(Crawler):
     #     "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     # }
     BASE_PAYLOAD = {"random": str(random())}
+    EX = "SZSE"
+    CODE_LISTS = pytomlpp.load("config/codeLists.toml")["codeLists"]
 
     @classmethod
-    def check_code(cls, code: str):
+    def getEX(cls) -> str:
+        return cls.EX
+
+    @classmethod
+    def codeIterator(cls) -> tqdm:
+        return tqdm(cls.CODE_LISTS)
+        # for code in cls.CODE_LISTS:
+        #     if cls.checkCode(code):
+        #         yield code
+
+    @classmethod
+    def checkCode(cls, code: str):
         payload = cls.BASE_PAYLOAD | {
             "dataType": "ZA||XA||DM||BG||CY||EB||JJ||ZQ||[zslb]||[qqzs]||[zczczq]||[reits]",
             "input": code,
@@ -92,12 +139,13 @@ class SZSECrawler(Crawler):
         )
         data = {}
         try:
-            data = resp.json()
+            data = loads(
+                resp.text,
+            )
             if not isinstance(data, dict):
                 raise ValueError(
                     "Unable to parse json: SZSE DailyQuotes:\n" + resp.text
                 )
-            data.update({"date": date.strftime("%Y%M%d")})
         except:
             raise ValueError("Unable to parse json: SZSE DailyQuotes:\n" + resp.text)
-        return StockData(data)
+        return StockData(ex=cls.EX, date=date, rawJsonData={code: data})
