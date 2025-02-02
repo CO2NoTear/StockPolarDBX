@@ -1,0 +1,5 @@
+tqdm
+pytomlpp
+requests
+pandas
+openpyxl
