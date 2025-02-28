@@ -163,3 +163,4 @@ cython_debug/
 #.idea/
 config/configs.py
 feature/20250101.csv
+output

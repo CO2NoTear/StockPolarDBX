@@ -8,7 +8,7 @@ from features.featext import (
     calculate_macd,
     calculate_bollinger,
     calculate_volume_ma,
-    extractFeature,
+    extract_feature,
 )
 
 from config.configs import ROOT_DIR
@@ -22,7 +22,7 @@ class testFeatureExtraction(unittest.TestCase):
         )
 
     def testAllFeatures(self):
-        res = extractFeature(self.origin_df)
+        res, _ = extract_feature(self.origin_df)
         self.assertTrue(True)
         path = Path(f"{ROOT_DIR}/feature")
         path.mkdir(parents=True, exist_ok=True)

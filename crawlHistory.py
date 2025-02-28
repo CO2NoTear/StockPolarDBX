@@ -18,5 +18,5 @@ def crawlAllHistory(ex: Literal["SZSE"], year: int = 2024) -> StockData:
 
 
 if __name__ == "__main__":
-    data = crawlAllHistory("SZSE", 2025)
+    data = crawlAllHistory("SZSE", 2024)
     data.store("./saved_data/history")

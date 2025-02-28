@@ -1,4 +1,7 @@
+from typing import Tuple
 import pandas as pd
+from pandas.errors import EmptyDataError
+from config.configs import ROOT_DIR
 
 
 # 平滑移动线SMA
@@ -52,14 +55,11 @@ def calculate_pe_percentile(df, window=252, pe_col="市盈率"):
     return df
 
 
-def extractFeature(df: pd.DataFrame | None = None) -> pd.DataFrame:
+def extract_feature(df: pd.DataFrame | None = None) -> Tuple[pd.DataFrame, list[str]]:
     # 加载数据（假设df已包含原始字段）
     if df is None:
-        origin_df = pd.read_csv("stock_data.csv")
-    else:
-        origin_df = df
-
-    result_df = origin_df
+        raise EmptyDataError()
+    result_df = df.copy()
 
     # 计算所有指标
     result_df = calculate_sma(result_df, window=20)
@@ -69,19 +69,17 @@ def extractFeature(df: pd.DataFrame | None = None) -> pd.DataFrame:
     result_df = calculate_volume_ma(result_df)
     result_df = calculate_pe_percentile(result_df)
 
+    feature_cols = [
+        # "交易日期",
+        # "证券代码",
+        "SMA_20",
+        "RSI",
+        "MACD",
+        "Bollinger_Upper",
+        "Volume_MA_20",
+        "PE_Pct",
+    ]
+
     # 结果展示
-    print(
-        result_df[
-            [
-                "交易日期",
-                "证券代码",
-                "SMA_20",
-                "RSI",
-                "MACD",
-                "Bollinger_Upper",
-                "Volume_MA_20",
-                "PE_Pct",
-            ]
-        ].tail()
-    )
-    return result_df
+    print(result_df.tail())
+    return result_df, feature_cols
