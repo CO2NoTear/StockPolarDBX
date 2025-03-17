@@ -1,7 +1,6 @@
 from typing import Tuple
 import pandas as pd
 from pandas.errors import EmptyDataError
-from config.configs import ROOT_DIR
 
 
 # 平滑移动线SMA
@@ -21,6 +20,17 @@ def calculate_rsi(df, window=14, price_col="今收"):
 
     rs = avg_gain / avg_loss
     df["RSI"] = 100 - (100 / (1 + rs))
+    return df
+
+
+# 回归收益率
+def calculate_future_return(df, window=5, price_col="今收"):
+    # 按股票分组，计算未来n日收益率
+    df = df.sort_values(["证券代码", "交易日期"])  # 确保按时间排序
+    df[f"future_{window}d_close"] = df.groupby("证券代码")[price_col].shift(-window)
+    df[f"{window}d_Return"] = (df[f"future_{window}d_close"] - df[price_col]) / df[
+        price_col
+    ]
     return df
 
 
@@ -62,6 +72,7 @@ def extract_feature(df: pd.DataFrame | None = None) -> Tuple[pd.DataFrame, list[
     result_df = df.copy()
 
     # 计算所有指标
+    result_df = calculate_future_return(result_df)
     result_df = calculate_sma(result_df, window=20)
     result_df = calculate_rsi(result_df, window=14)
     result_df = calculate_macd(result_df)
@@ -80,6 +91,4 @@ def extract_feature(df: pd.DataFrame | None = None) -> Tuple[pd.DataFrame, list[
         "PE_Pct",
     ]
 
-    # 结果展示
-    print(result_df.tail())
     return result_df, feature_cols
