@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from crawler.crawler import Crawler, SZSECrawler, StockData
 from typing import Literal
+from argparse import ArgumentParser
 
 
 def crawlAllHistory(ex: Literal["SZSE"], year: int = 2024) -> StockData:
@@ -18,5 +19,9 @@ def crawlAllHistory(ex: Literal["SZSE"], year: int = 2024) -> StockData:
 
 
 if __name__ == "__main__":
-    data = crawlAllHistory("SZSE", 2024)
-    data.store("./saved_data/history")
+    parser = ArgumentParser("crawler")
+    parser.add_argument("-y", "--year", type=int, required=True, nargs="+")
+    args = parser.parse_args()
+    for year in args.year:
+        data = crawlAllHistory("SZSE", year)
+        data.store("./saved_data/history")
