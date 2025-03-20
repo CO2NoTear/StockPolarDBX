@@ -1,0 +1,6 @@
+tqdm
+pytomlpp
+requests
+pandas
+openpyxl
+lightgbm
