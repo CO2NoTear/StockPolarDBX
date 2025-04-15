@@ -1,21 +1,34 @@
 from typing import Iterator, Self, Any
 import pandas as pd
 import abc
-from json import dump, loads
+from json import loads
 from tqdm import tqdm
 import pytomlpp
 import requests
 from pathlib import Path
 from datetime import datetime
 from random import random
-from dataclasses import dataclass
+from consts import ORIGINAL_DATA_COLUMNS, RENAME_MAPPER
+
+from db import get_engine
 
 
-@dataclass
 class StockData:
     ex: str
     date: datetime
     data: pd.DataFrame | None = None
+
+    @staticmethod
+    def preCleanData(data: pd.DataFrame) -> pd.DataFrame:
+        columnsToDrop = set(data.columns) - ORIGINAL_DATA_COLUMNS
+        newData = data.drop(columns=list(columnsToDrop))
+        newData = newData.rename(columns=RENAME_MAPPER)
+        return newData
+
+    def __init__(self, ex: str, date: datetime, data: pd.DataFrame) -> None:
+        self.ex = ex
+        self.date = date
+        self.data = StockData.preCleanData(data)
 
     # @classmethod
     # def fromJson(cls, ex: str, date: datetime, rawJsonData: dict | None = None) -> Self:
@@ -48,6 +61,7 @@ class StockData:
         try:
             # dump(self.data, fp, ensure_ascii=False)
             self.data.to_csv(fp)
+            self.data.to_sql("original", get_engine(), if_exists="append", index=False)
         except Exception as e:
             raise ValueError(f"Cannot save data to {savePath}") from e
         finally:
@@ -86,10 +100,7 @@ class Crawler(metaclass=abc.ABCMeta):
 
     @classmethod
     def crawl_history(cls, date: datetime) -> StockData:
-        ex = cls.getEX()
-        data = StockData(ex, date)
-        data = cls.crawl_history_implement(date)
-        return data
+        return cls.crawl_history_implement(date)
 
     @classmethod
     @abc.abstractmethod

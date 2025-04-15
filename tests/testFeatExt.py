@@ -1,7 +1,7 @@
 import unittest
 import pandas as pd
 from pathlib import Path
-from features.featext import (
+from featureExtraction.featext import (
     calculate_sma,
     calculate_pe_percentile,
     calculate_rsi,
@@ -11,7 +11,7 @@ from features.featext import (
     extract_feature,
 )
 
-from config.configs import ROOT_DIR
+from consts import ROOT_DIR
 
 
 class testFeatureExtraction(unittest.TestCase):

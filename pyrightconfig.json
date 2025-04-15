@@ -2,6 +2,6 @@
   "exclude": [
     "**/__pycache__",
   ],
-  "venvPath": "/Users/co2notear/miniconda3/envs/",
-  "venv": "stock"
+  "venvPath": ".",
+  "venv": ".venv "
 }

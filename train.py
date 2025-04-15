@@ -1,11 +1,12 @@
+from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
-from config.configs import ROOT_DIR
+from consts import ROOT_DIR
 from model.rankingModel import RankingModel
 from featureExtraction.featext import extract_feature
 from model.weightedScoreModel import WeightedScoreModel
-from utils import prepare_origin_df
+from utils import prepare_origin_df_from_db
 import pandas as pd
 
 from argparse import ArgumentParser
@@ -43,8 +44,13 @@ if __name__ == "__main__":
 
     Path(f"{ROOT_DIR}/output/").mkdir(exist_ok=True)
 
-    train_origin_df = prepare_origin_df(filename="20240101.csv")
-    test_origin_df = prepare_origin_df(filename="20250101.csv")
+    train_origin_df = prepare_origin_df_from_db(
+        startDate=datetime(2024, 1, 1), endDate=datetime(2025, 1, 31)
+    )
+    test_origin_df = prepare_origin_df_from_db(
+        startDate=datetime(2025, 2, 1), endDate=datetime(2025, 6, 1)
+    )
+    print(test_origin_df.head(20))
 
     train, feature_cols = extract_feature(train_origin_df)
     test, feature_cols = extract_feature(test_origin_df)
@@ -59,10 +65,10 @@ if __name__ == "__main__":
     result.to_csv(f"{ROOT_DIR}/output/{args.model}_result.csv")
 
     print(
-        result[result["交易日期"] == "2025-01-02"][result["Rank"] < 200]
-        .drop(columns="交易日期")[
+        result[result["date"] == "2025-01-02"][result["Rank"] < 200]
+        .drop(columns="date")[
             # .sort_values(["Rank"])[["证券代码", "Rank"]]
-            ["证券代码", "Rank"]
+            ["code", "Rank"]
         ]
         .head(20)
     )
