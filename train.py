@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Literal
 
 from consts import ROOT_DIR
+from db import get_engine
 from model.rankingModel import RankingModel
 from featureExtraction.featext import extract_feature
 from model.weightedScoreModel import WeightedScoreModel
@@ -64,8 +65,29 @@ if __name__ == "__main__":
 
     result.to_csv(f"{ROOT_DIR}/output/{args.model}_result.csv")
 
+    OUTPUT_COLS = [
+        "date",
+        "code",
+        "Rank",
+        "future_5d_close",
+        "5d_Return",
+        "SMA_20",
+        "RSI",
+        "MACD",
+        "MACD_Signal",
+        "MACD_Hist",
+        "Bollinger_Upper",
+        "Bollinger_Lower",
+        "Volume_MA_20",
+        "PE_Pct",
+        "future_return",
+    ]
+    result.filter(items=OUTPUT_COLS).rename({"Rank": "rankScore"}).to_sql(
+        "features", get_engine(), if_exists="replace"
+    )
+
     print(
-        result[result["date"] == "2025-01-02"][result["Rank"] < 200]
+        result[result["date"] == "2025-03-02"][result["Rank"] < 200]
         .drop(columns="date")[
             # .sort_values(["Rank"])[["证券代码", "Rank"]]
             ["code", "Rank"]

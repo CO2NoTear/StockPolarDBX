@@ -1,3 +1,4 @@
+from typing import Literal
 from flask import Flask, jsonify
 from flask_cors import CORS  # 解决跨域问题
 import pandas as pd
@@ -17,12 +18,22 @@ latest_data = {
 
 
 @app.route("/api/getData/<feature>/<stockCode>", methods=["GET"])
-def get_data(feature, stockCode):
+def get_data(feature: Literal["original", "SMA"], stockCode):
     """返回最新数据的API接口"""
-    original_data = pd.read_sql(
-        f"select * from original where code={stockCode}", get_engine()
-    )
-    return jsonify(original_data.to_dict("list"))
+    data = None
+    sql = ""
+    if feature == "original":
+        sql = f"select * from original where code={stockCode}"
+    elif feature == "SMA":
+        sql = f"select * from original where code={stockCode}"
+
+    else:
+        return None
+    if sql != "":
+        data = pd.read_sql(sql, get_engine())
+        return jsonify(data.to_dict("list"))
+    else:
+        return None
 
 
 if __name__ == "__main__":
