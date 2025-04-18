@@ -14,15 +14,15 @@ class RankingModel(AbsModel):
         train_data: pd.DataFrame,
         test_data: pd.DataFrame,
         feature_cols: list[str],
-        group_col="交易日期",
+        group_col="date",
     ) -> None:
         super().__init__(train_data, test_data, feature_cols, group_col)
 
     def prepare_df(self, origin_df: pd.DataFrame) -> pd.DataFrame:
         # 准备数据（需标签：如未来收益率分档）
         df = origin_df.copy()
-        df = df.sort_values(["证券代码", "交易日期"])
-        df["future_return"] = df.groupby("证券代码")["今收"].shift(-5).pct_change(5)
+        df = df.sort_values(["code", "date"])
+        df["future_return"] = df.groupby("code")["close"].shift(-5).pct_change(5)
         df["label"] = pd.qcut(df["future_return"], 10, labels=False)  # 分10档
 
         return df
@@ -49,5 +49,5 @@ class RankingModel(AbsModel):
         result = self.test_data_.copy()
         # 生成排序
         result["Rank_Score"] = self.model_.predict(self.test_data_[self.feature_cols_])
-        result["Rank"] = result.groupby("交易日期")["Rank_Score"].rank(ascending=False)
+        result["Rank"] = result.groupby("code")["Rank_Score"].rank(ascending=False)
         return result

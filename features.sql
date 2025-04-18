@@ -1,0 +1,17 @@
+CREATE TABLE features( 
+  date DATE NOT NULL, 
+  code INT NOT NULL, 
+  rankScore FLOAT, 
+  future_5d_close FLOAT,
+  5d_Return FLOAT,
+  SMA_20 FLOAT,
+  RSI FLOAT,
+  MACD FLOAT,
+  MACD_Signal FLOAT,
+  MACD_Hist FLOAT,
+  Bollinger_Upper FLOAT,
+  Bollinger_Lower FLOAT,
+  Volume_MA_20 FLOAT,
+  PE_Pct FLOAT,
+  future_return FLOAT,
+PRIMARY KEY(date, code));

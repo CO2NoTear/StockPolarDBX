@@ -4,3 +4,7 @@ requests
 pandas
 openpyxl
 lightgbm
+flask
+flask-cors
+pymysql
+sqlalchemy
