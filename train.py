@@ -27,7 +27,6 @@ def getModel(
             "MACD_Hist": 0.15,  # 趋势
             "Volume_MA_20": 0.2,  # 成交量
             "PE_Pct": 0.2,  # 估值
-            # "Bollinger_%B": 0.1,  # 波动性（需计算：Bollinger %B）
             "5d_Return": 0.3,  # 短期收益率
         }
 
@@ -35,14 +34,7 @@ def getModel(
     raise ValueError(f"Unkonwn model name {modelName}")
 
 
-if __name__ == "__main__":
-    parser = ArgumentParser("Training models.")
-    parser.add_argument(
-        "-m", "--model", choices=["ranking", "weightedScore"], required=True
-    )
-
-    args = parser.parse_args()
-
+def saveRankData(modelName: Literal["ranking", "weightedScore"]):
     Path(f"{ROOT_DIR}/output/").mkdir(exist_ok=True)
 
     train_origin_df = prepare_origin_df_from_db(
@@ -56,7 +48,7 @@ if __name__ == "__main__":
     train, feature_cols = extract_feature(train_origin_df)
     test, feature_cols = extract_feature(test_origin_df)
 
-    model = getModel(args.model, train, test, feature_cols)
+    model = getModel(modelName, train, test, feature_cols)
 
     model.train_model()
     result = model.predict_model()
@@ -82,15 +74,26 @@ if __name__ == "__main__":
         "PE_Pct",
         "future_return",
     ]
-    result.filter(items=OUTPUT_COLS).rename({"Rank": "rankScore"}).to_sql(
-        "features", get_engine(), if_exists="replace"
+    result.filter(items=OUTPUT_COLS).rename(columns={"Rank": "rankScore"}).to_sql(
+        "features", get_engine(), if_exists="replace", index=False
     )
 
     print(
-        result[result["date"] == "2025-03-02"][result["Rank"] < 200]
+        result[result["date"] == "2025-02-28"][result["Rank"] < 200]
         .drop(columns="date")[
             # .sort_values(["Rank"])[["证券代码", "Rank"]]
             ["code", "Rank"]
         ]
         .head(20)
     )
+
+
+if __name__ == "__main__":
+    parser = ArgumentParser("Training models.")
+    parser.add_argument(
+        "-m", "--model", choices=["ranking", "weightedScore"], required=True
+    )
+
+    args = parser.parse_args()
+
+    saveRankData(args.model)

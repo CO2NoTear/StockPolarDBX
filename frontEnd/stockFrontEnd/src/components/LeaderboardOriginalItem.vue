@@ -1,6 +1,6 @@
 <template>
   <div class="chart-container">
-    <h1>实时数据监控看板</h1>
+    <h1><slot></slot></h1>
     <div ref="chart" class="chart"></div>
   </div>
 </template>
@@ -17,7 +17,7 @@
 }
 </style>
 <script setup>
-import { defineProps, onMounted, ref } from "vue";
+import { defineProps, onMounted, ref, watch, watchEffect } from "vue";
 import * as echarts from "echarts";
 const props = defineProps(["feature", "stockCode"]);
 const chart = ref(null);
@@ -43,10 +43,6 @@ const initChart = () => {
   if (chart.value) {
     myChart = echarts.init(chart.value);
     const option = {
-      title: {
-        left: "center",
-        text: "原始数据",
-      },
       toolbox: {
         feature: {
           dataZoom: {
@@ -55,8 +51,6 @@ const initChart = () => {
           brush: {
             type: ["lineX", "clear"],
           },
-          restore: {},
-          saveAsImage: {},
         },
       },
       brush: {
@@ -286,5 +280,8 @@ onMounted(() => {
   window.addEventListener("resize", function () {
     myChart.resize();
   });
+});
+watchEffect(() => {
+  updateChartData(props.feature, props.stockCode);
 });
 </script>

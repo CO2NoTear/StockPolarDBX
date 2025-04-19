@@ -9,28 +9,63 @@ import pymysql
 app = Flask(__name__)
 CORS(app)  # 允许所有域名跨域访问（生产环境建议配置具体域名）
 
-# 模拟数据（可替换为数据库查询或其他动态数据）
-latest_data = {
-    "status": "success",
-    "message": "Data retrieved successfully",
-    "data": {"timestamp": ["2023-10-05 14:30:00"], "value": [23]},
-}
+FEATURE_COLS = [
+    "SMA_20",
+    "5d_Return",
+    "RSI",
+    "MACD",
+    "MACD_Signal",
+    "MACD_Hist",
+    "Bollinger_Upper",
+    "Bollinger_Lower",
+    "Volume_MA_20",
+    "PE_Pct",
+]
+
+
+def _query_db(sql: str) -> pd.DataFrame | None:
+    if sql != "":
+        return pd.read_sql(sql, get_engine()).fillna("-")
 
 
 @app.route("/api/getData/<feature>/<stockCode>", methods=["GET"])
-def get_data(feature: Literal["original", "SMA"], stockCode):
+def get_data(
+    feature: Literal[
+        "original",
+        "SMA_20",
+        "5d_Return",
+        "RSI",
+        "MACD",
+        "MACD_Signal",
+        "MACD_Hist",
+        "Bollinger_Upper",
+        "Bollinger_Lower",
+        "Volume_MA_20",
+        "PE_Pct",
+    ],
+    stockCode,
+):
     """返回最新数据的API接口"""
     data = None
     sql = ""
     if feature == "original":
         sql = f"select * from original where code={stockCode}"
-    elif feature == "SMA":
-        sql = f"select * from original where code={stockCode}"
+    elif feature in FEATURE_COLS:
+        sql = f"select date, `{feature}` from features where code={stockCode}"
 
+    data = _query_db(sql)
+
+    if data is not None:
+        return jsonify(data.to_dict("list"))
     else:
         return None
-    if sql != "":
-        data = pd.read_sql(sql, get_engine())
+
+
+@app.route("/api/getTopK/<k>/<date>", methods=["GET"])
+def get_top_k(k: int, date: str):
+    sql = f"select date, code, rankScore from features where date='{date}' AND rankScore<={k} ORDER BY(rankScore) ASC"
+    data = _query_db(sql)
+    if data is not None:
         return jsonify(data.to_dict("list"))
     else:
         return None

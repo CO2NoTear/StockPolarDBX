@@ -49,5 +49,5 @@ class RankingModel(AbsModel):
         result = self.test_data_.copy()
         # 生成排序
         result["Rank_Score"] = self.model_.predict(self.test_data_[self.feature_cols_])
-        result["Rank"] = result.groupby("code")["Rank_Score"].rank(ascending=False)
+        result["Rank"] = result.groupby("date")["Rank_Score"].rank(ascending=False)
         return result
