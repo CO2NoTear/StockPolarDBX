@@ -8,7 +8,7 @@ import requests
 from pathlib import Path
 from datetime import datetime
 from random import random
-from consts import ORIGINAL_DATA_COLUMNS, RENAME_MAPPER
+from consts import ORIGINAL_DATA_COLUMNS, RENAME_MAPPER, SZSEIndexCodeList
 
 from db import get_engine
 
@@ -23,6 +23,7 @@ class StockData:
         columnsToDrop = set(data.columns) - ORIGINAL_DATA_COLUMNS
         newData = data.drop(columns=list(columnsToDrop))
         newData = newData.rename(columns=RENAME_MAPPER)
+        newData = newData[newData["code"].isin(SZSEIndexCodeList)]
         return newData
 
     def __init__(self, ex: str, date: datetime, data: pd.DataFrame) -> None:
