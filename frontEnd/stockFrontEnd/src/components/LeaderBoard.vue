@@ -1,10 +1,11 @@
 <script setup>
 import LeaderboardOriginalItem from "./LeaderboardOriginalItem.vue";
 import LeaderboardFeatureItem from "./LeaderboardFeatureItem.vue";
-import { watch, ref, onMounted } from "vue";
+import CodeList from "./CodeList.vue";
+import { ref } from "vue";
 const currentTab = ref("原始数据");
-const stockCode = ref(50);
-const codeList = ref([2333])
+const stockCode = ref(1);
+const codeList = ref([2333]);
 const tabs = [
   "原始数据",
   "SMA20",
@@ -44,32 +45,6 @@ const tabsMap = {
   成交量20日移动线: "Volume_MA_20",
   市盈率分位数: "PE_Pct",
 };
-async function getTop20Code(date) {
-  const options = {
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    hour12: false,
-  };
-  const url = `http://localhost:2425/api/getTopK/20/${new Date(date).toLocaleString("zh-CN", options).replaceAll('/','-')}`;
-  const startTime = Date.now();
-  console.log("开始从数据库获取Top20数据...");
-  console.log(url);
-  try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("网络响应异常");
-    const charDataset = await response.json();
-    codeList.value = charDataset.code
-  } catch (error) {
-    console.error("数据获取失败:", error);
-  }
-  const endTime = Date.now();
-  console.log(`数据获取耗时: ${(endTime - startTime) / 1e3}s`);
-  console.log(codeList)
-}
-onMounted(()=>{
-  getTop20Code("2025/04/01")
-})
 </script>
 
 <template>
@@ -78,10 +53,6 @@ onMounted(()=>{
       <form @submit.prevent="onSubmit">
         <span>股票代码</span>
         <input list="codeListOptions" v-model.lazy="stockCode" required placeholder="股票代码" />
-        <datalist id="codeListOptions">
-          <option v-for="(code, index) in codeList" :value="code">Rank: {{index+1}}</option>
-        </datalist>
-        <br></br>
         <span>数据类型</span>
         <select v-model.lazy="currentTab">
           <option disabled value="">请选择数据类型</option>
@@ -89,15 +60,23 @@ onMounted(()=>{
             {{ tab }}
           </option>
         </select>
-        <br></br>
+        <!-- <br></br> -->
+        <codeList
+          @item-selected="
+            (item) => {
+              stockCode = item;
+            }
+          "
+        ></codeList>
         <button>确定</button>
       </form>
       <component
         :is="LeaderboardComponentMap[currentTab]"
         :feature="tabsMap[currentTab]"
-        :stockCode="stockCode">
-      {{ currentTab }}看板
-     </component>
+        :stockCode="stockCode"
+      >
+        {{ currentTab }}看板
+      </component>
     </div>
   </div>
 </template>
