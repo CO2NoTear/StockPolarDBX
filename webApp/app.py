@@ -63,7 +63,7 @@ def get_data(
 
 @app.route("/api/getTopK/<k>/<date>", methods=["GET"])
 def get_top_k(k: int, date: str):
-    sql = f"select date, code, rankScore from features where date='{date}' AND rankScore<={k} ORDER BY(rankScore) ASC"
+    sql = f"select code, AVG(rankScore) from features GROUP BY code ORDER BY AVG(rankScore) ASC LIMIT {k}"
     data = _query_db(sql)
     if data is not None:
         return jsonify(data.to_dict("list"))
