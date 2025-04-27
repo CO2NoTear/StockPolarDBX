@@ -185,6 +185,21 @@ const initChart = () => {
           // containLabel: true,
         },
       ],
+      series: [
+        {
+          name: "K线",
+          type: "candlestick",
+          markPoint: {
+            symbol: "triangle",
+            symbolSize: 10,
+            data: [{ x: 100, y: 100 }],
+            itemStyle: {
+              color: "#ff0000",
+              borderColor: "#1e0303",
+            },
+          },
+        },
+      ],
     };
     myChart.setOption(option);
   }
@@ -216,6 +231,54 @@ const updateChartData = async (feature, stockCode) => {
   const option = myChart.getOption();
   console.log(stockDataset);
 
+  const KData = [];
+  for (let i = 0; i < stockDataset.open.length; ++i) {
+    KData.push([
+      stockDataset.open[i],
+      stockDataset.close[i],
+      stockDataset.low_price[i],
+      stockDataset.high_price[i],
+    ]);
+  }
+  const buyPointsData = [];
+  const sellPointsData = [];
+  for (let i = 0; i < stockDataset.buyPoints.length; ++i) {
+    buyPointsData.push({
+      coord: [
+        new Date(stockDataset.buyPoints[i]).toLocaleString("zh-CN", {
+          year: "numeric",
+          month: "numeric",
+          day: "numeric",
+          hour12: false,
+        }),
+        `${stockDataset.buyPointsClose[i]}`,
+      ],
+      symbolRotation: 0,
+      itemStyle: {
+        color: "#ff0000",
+        borderColor: "#1e0303",
+      },
+    });
+  }
+  for (let i = 0; i < stockDataset.sellPoints.length; ++i) {
+    buyPointsData.push({
+      coord: [
+        new Date(stockDataset.sellPoints[i]).toLocaleString("zh-CN", {
+          year: "numeric",
+          month: "numeric",
+          day: "numeric",
+          hour12: false,
+        }),
+        `${stockDataset.sellPointsClose[i]}`,
+      ],
+      symbolRotate: 180,
+      itemStyle: {
+        color: "#00ff00",
+        borderColor: "#1e0303",
+      },
+    });
+  }
+
   option.dataset = {
     source: stockDataset,
   };
@@ -225,7 +288,13 @@ const updateChartData = async (feature, stockCode) => {
   series.push({
     name: "K线",
     type: "candlestick",
-    encode: { x: "date", y: ["open", "close", "low_price", "high_price"] },
+    data: KData,
+    // encode: { x: "date", y: ["open", "close", "low_price", "high_price"] },
+    markPoint: {
+      symbol: "triangle",
+      symbolSize: 10,
+      data: [...buyPointsData],
+    },
   });
   series.push({
     name: "MA5",

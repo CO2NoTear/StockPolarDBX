@@ -6,6 +6,11 @@
     <!-- 错误提示 -->
     <div v-if="error" style="color: red">{{ error }}</div>
 
+    <select v-model="strategy" @change="fetchData">
+      选股策略
+      <option value="weightedScore">加权平均模型</option>
+      <option value="ranking">LambdaMART模型</option>
+    </select>
     <!-- 列表展示 -->
     <ul v-if="!loading && !error">
       <li
@@ -17,9 +22,6 @@
         Rank: {{ index + 1 }} Code: {{ item }}
       </li>
     </ul>
-
-    <!-- 显示选中的值 -->
-    <div v-if="selectedItem">当前选中：{{ selectedItem }}</div>
   </div>
 </template>
 
@@ -29,16 +31,17 @@ export default {
     return {
       items: [], // 列表数据
       loading: false, // 加载状态
+      strategy: "ranking",
       error: null, // 错误信息
       selectedItem: null, // 选中的项
     };
   },
   async created() {
     // 组件创建时自动加载数据
-    await this.fetchData();
+    this.fetchData();
   },
   methods: {
-    async getTop20Code(date) {
+    async getTop20Code(strategy) {
       let codeList = [];
       const options = {
         year: "numeric",
@@ -46,7 +49,7 @@ export default {
         day: "numeric",
         hour12: false,
       };
-      const url = `http://localhost:2425/api/getTopK/20/${new Date(date).toLocaleString("zh-CN", options).replaceAll("/", "-")}`;
+      const url = `http://localhost:2425/api/getTopK/20/${strategy}`;
       const startTime = Date.now();
       console.log("开始从数据库获取Top20数据...");
       console.log(url);
@@ -67,7 +70,7 @@ export default {
       try {
         this.loading = true;
 
-        this.getTop20Code("2025/04/01").then((codeList) => {
+        this.getTop20Code(this.strategy).then((codeList) => {
           this.items = codeList;
         });
         console.log(this.items);

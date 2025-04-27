@@ -45,11 +45,32 @@ const tabsMap = {
   成交量20日移动线: "Volume_MA_20",
   市盈率分位数: "PE_Pct",
 };
+const crawling = ref(false);
+async function crawlHistory() {
+  const url = `http://localhost:2425/api/crawlHistory/`;
+  console.log("开始重新爬取数据");
+  const startTime = Date.now();
+  try {
+    crawling.value = true;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("网络响应异常");
+  } catch (error) {
+    console.error("数据爬取失败:", error);
+  } finally {
+    crawling.value = false;
+  }
+  const endTime = Date.now();
+  console.log(`数据爬取耗时: ${(endTime - startTime) / 1e3}s`);
+}
 </script>
 
 <template>
   <div id="app">
     <div class="dashboard">
+      <div>
+        <span v-if="crawling">正在爬取数据，预计需要10分钟，请等待。</span>
+        <button v-else @click="crawlHistory">重新爬取最新数据</button>
+      </div>
       <form @submit.prevent="onSubmit">
         <span>股票代码</span>
         <input list="codeListOptions" v-model.lazy="stockCode" required placeholder="股票代码" />

@@ -2,6 +2,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
+from sqlalchemy.engine import result
+
 from consts import ROOT_DIR
 from db import get_engine
 from model.rankingModel import RankingModel
@@ -55,7 +57,7 @@ def saveRankData(modelName: Literal["ranking", "weightedScore"]):
 
     # result = result.sort_values("Rank", ascending=True)
 
-    result.to_csv(f"{ROOT_DIR}/output/{args.model}_result.csv")
+    result.to_csv(f"{ROOT_DIR}/output/result.csv")
 
     OUTPUT_COLS = [
         "date",
@@ -74,26 +76,21 @@ def saveRankData(modelName: Literal["ranking", "weightedScore"]):
         "PE_Pct",
         "future_return",
     ]
-    result.filter(items=OUTPUT_COLS).rename(columns={"Rank": "rankScore"}).to_sql(
-        "features", get_engine(), if_exists="replace", index=False
-    )
-
-    print(
-        result[result["date"] == "2025-02-28"][result["Rank"] < 200]
-        .drop(columns="date")[
-            # .sort_values(["Rank"])[["证券代码", "Rank"]]
-            ["code", "Rank"]
-        ]
-        .head(20)
-    )
+    return result.filter(items=OUTPUT_COLS).rename(columns={"Rank": "rankScore"})
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser("Training models.")
-    parser.add_argument(
-        "-m", "--model", choices=["ranking", "weightedScore"], required=True
-    )
+    # parser = ArgumentParser("Training models.")
+    # parser.add_argument(
+    #     "-m", "--model", choices=["ranking", "weightedScore"], required=True
+    # )
+    #
+    # args = parser.parse_args()
 
-    args = parser.parse_args()
+    rankingResult = saveRankData("ranking")
+    weightedResult = saveRankData("weightedScore")
 
-    saveRankData(args.model)
+    result = rankingResult.copy().rename(columns={"rankScore": "rankScore_ranking"})
+    result["rankScore_weightedScore"] = weightedResult["rankScore"]
+
+    result.to_sql("features", get_engine(), if_exists="replace", index=False)
